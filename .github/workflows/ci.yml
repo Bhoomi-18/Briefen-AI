@@ -1,0 +1,70 @@
+name: Briefen Backend CI
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_secure_pass
+          POSTGRES_DB: briefen_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt pytest httpx pytest-asyncio
+
+    - name: Run code compilation checks
+      run: |
+        cd backend
+        python -c "import compileall; compileall.compile_dir('app', force=True)"
+
+    - name: Run tests with pytest
+      env:
+        DATABASE_URL: postgresql+asyncpg://postgres:postgres_secure_pass@localhost:5432/briefen_db
+        REDIS_URL: redis://localhost:6379/0
+        JWT_SECRET_KEY: test-secret-key-must-be-long-enough-32-chars-long
+        JWT_REFRESH_SECRET_KEY: test-refresh-secret-key-must-be-long-enough-32-chars-long
+      run: |
+        cd backend
+        pytest

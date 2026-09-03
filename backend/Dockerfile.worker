@@ -1,0 +1,49 @@
+# ============================================================================
+# Briefen — Celery Worker Production Dockerfile
+# Target: Render Background Worker Service
+# ============================================================================
+
+# Stage 1: Build — install Python dependencies
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# ============================================================================
+# Stage 2: Runtime — minimal image for the Celery worker
+# ============================================================================
+FROM python:3.11-slim AS runner
+
+WORKDIR /app
+
+# ffmpeg is required by faster-whisper for audio transcoding during task processing
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy installed Python packages from builder
+COPY --from=builder /root/.local /root/.local
+
+# Copy application source code
+COPY . /app
+
+# Make worker entrypoint executable
+RUN chmod +x /app/entrypoint.worker.sh
+
+ENV PATH=/root/.local/bin:$PATH \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Celery workers do not expose an HTTP port
+ENTRYPOINT ["/app/entrypoint.worker.sh"]

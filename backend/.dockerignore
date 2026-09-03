@@ -1,0 +1,54 @@
+# =============================================================================
+# Backend Docker Build Ignore
+# Prevents unnecessary files from being sent to the Docker build context.
+# Smaller context = faster builds.
+# =============================================================================
+
+# Environment files — NEVER bake secrets into the image
+.env
+.env.local
+.env.production
+docker.env
+
+# Python cache and compiled files
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.eggs
+dist/
+build/
+
+# Test artifacts
+.pytest_cache
+tests/__pycache__
+*.coverage
+.coverage
+htmlcov/
+
+# Local upload files (production uses Cloudinary)
+uploads/
+
+# Local data / scratch files
+data/
+scratch/
+scratch_list_models.py
+verify_user.py
+
+# Git
+.git
+.gitignore
+.github
+
+# Editor metadata
+.vscode/
+.idea/
+*.swp
+*.swo
+*.DS_Store
+
+# Documentation (not needed in runtime image)
+README.md
+DEPLOYMENT.md
