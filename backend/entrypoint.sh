@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Exit immediately if any command exits with non-zero status
 set -e
@@ -52,9 +52,18 @@ UVICORN_PID=$!
 
 # Wait for either process to exit — if one dies, kill the other and exit
 # so Render detects the failure and restarts the container.
-wait -n $CELERY_PID $UVICORN_PID
-EXIT_CODE=$?
-
-echo "==> A process exited with code ${EXIT_CODE}. Shutting down..."
-kill $CELERY_PID $UVICORN_PID 2>/dev/null
-exit $EXIT_CODE
+while true; do
+    if ! kill -0 $UVICORN_PID 2>/dev/null; then
+        echo "==> FastAPI (uvicorn) exited. Shutting down Celery..."
+        kill $CELERY_PID 2>/dev/null
+        wait $CELERY_PID 2>/dev/null
+        exit 1
+    fi
+    if ! kill -0 $CELERY_PID 2>/dev/null; then
+        echo "==> Celery worker exited. Shutting down FastAPI..."
+        kill $UVICORN_PID 2>/dev/null
+        wait $UVICORN_PID 2>/dev/null
+        exit 1
+    fi
+    sleep 5
+done
