@@ -34,8 +34,27 @@ else
 fi
 
 # -----------------------------------------------------------------------
-# Step 4: Start FastAPI with uvicorn on 0.0.0.0:$PORT
-# $PORT is injected by Render at runtime; defaults to 8000 locally.
+# Step 4: Start FastAPI (uvicorn) + Celery worker in the same container.
+# Render free tier has no separate Background Worker — both run here.
 # -----------------------------------------------------------------------
+
+echo "==> Starting Celery worker in background..."
+celery -A app.core.celery_app worker \
+    --loglevel=info \
+    --concurrency="${CELERY_CONCURRENCY:-2}" \
+    --queues=celery \
+    &
+CELERY_PID=$!
+
 echo "==> Launching FastAPI server on 0.0.0.0:${PORT}..."
-exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT}"
+uvicorn app.main:app --host 0.0.0.0 --port "${PORT}" &
+UVICORN_PID=$!
+
+# Wait for either process to exit — if one dies, kill the other and exit
+# so Render detects the failure and restarts the container.
+wait -n $CELERY_PID $UVICORN_PID
+EXIT_CODE=$?
+
+echo "==> A process exited with code ${EXIT_CODE}. Shutting down..."
+kill $CELERY_PID $UVICORN_PID 2>/dev/null
+exit $EXIT_CODE
