@@ -17,6 +17,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        # Always pass through CORS preflight requests without rate limiting
+        if request.method == "OPTIONS":
+            return await call_next(request)
+
         # 1. Fallback bypass check if Redis is offline
         if not redis_client:
             return await call_next(request)

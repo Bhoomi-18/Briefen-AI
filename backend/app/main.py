@@ -63,12 +63,8 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Middleware: Rate Limiting
-# ---------------------------------------------------------------------------
-app.add_middleware(RateLimitMiddleware)
-
-# ---------------------------------------------------------------------------
-# Middleware: CORS
+# Middleware: CORS — must be added FIRST so it is the outermost wrapper.
+# Handles OPTIONS preflight before any other middleware sees the request.
 # In production, restricted to the configured Vercel frontend URL only.
 # In dev/docker, wildcard is allowed for convenience.
 # ---------------------------------------------------------------------------
@@ -79,6 +75,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Middleware: Rate Limiting — added after CORS so preflight is never rate-limited.
+# ---------------------------------------------------------------------------
+app.add_middleware(RateLimitMiddleware)
 
 # ---------------------------------------------------------------------------
 # Routers
