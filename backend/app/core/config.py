@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
 
     # -------------------------------------------------------------------------
+    # Resend — HTTP email API (works on Render free tier, unlike SMTP)
+    # -------------------------------------------------------------------------
+    RESEND_API_KEY: Optional[str] = None
+
+    # -------------------------------------------------------------------------
     # File Uploads & Storage
     # -------------------------------------------------------------------------
     UPLOAD_DIR: str = "./uploads"
