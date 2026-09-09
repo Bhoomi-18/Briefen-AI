@@ -28,6 +28,8 @@ celery_app.conf.update(
     ],
     task_track_started=True,
 
+    broker_connection_retry_on_startup=True,
+
     # SSL settings for Upstash TLS (rediss://)
     broker_use_ssl=_ssl_config,
     redis_backend_use_ssl=_ssl_config,

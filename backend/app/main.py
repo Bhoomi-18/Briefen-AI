@@ -26,6 +26,10 @@ async def lifespan(app: FastAPI):
     # 1. Validate all required production environment variables
     settings.startup_validate()
 
+    # Log the configured CORS origins so we can verify from Render logs
+    logger.info(f"CORS allowed origins: {settings.cors_origins}")
+    logger.info(f"FRONTEND_URL configured as: {settings.FRONTEND_URL}")
+
     # 2. Create local upload directory only when using local storage (dev/docker)
     if settings.STORAGE_PROVIDER == "local":
         os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
