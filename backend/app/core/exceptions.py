@@ -1,6 +1,10 @@
+import logging
+import traceback
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
+
+logger = logging.getLogger(__name__)
 
 
 class BriefenException(Exception):
@@ -61,4 +65,16 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.detail}
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        """Catch-all handler — logs full traceback and returns JSON 500 so CORS headers are always present."""
+        logger.error(
+            f"Unhandled exception on {request.method} {request.url.path}:\n"
+            + traceback.format_exc()
+        )
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "An internal server error occurred. Please try again later."}
         )
